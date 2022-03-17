@@ -10,6 +10,7 @@ async function main() {
   const BaseV1Minter = await ethers.getContractFactory("BaseV1Minter");
 
   const wrappedNative = '0x32dcc8Ae53E09cAa0fe86501C3965e1C4B58569d'
+  const devWallet = '' // devWallet
   const claiMants = ["0x32dcc8Ae53E09cAa0fe86501C3965e1C4B58569d","0xD4952c8cF95A50F2fccF1679bC2ec71DAb39DC0A","0x3Ca05A88591b3aFb618FBeB03f82dA75d4DB238e","0xCCEbed5cF91CD77234968db07e850f623517197C","0xb19Bd1DCC7ed728a4403547aeb522Abd5c9758C6","0xb19Bd1DCC7ed728a4403547aeb522Abd5c9758C6","0xC23D6fe9a70bfFa76012001623d554bAe53069fc", "0x29b0Da86e484E1C0029B56e817912d778aC0EC69", "0xC23D6fe9a70bfFa76012001623d554bAe53069fc", "0x7d016eec9c25232b01f23ef992d98ca97fc2af5a", "0x468003b688943977e6130f4f68f23aad939a1040","0xe55e19fb4f2d85af758950957714292dac1e25b2","0x4cdf39285d7ca8eb3f090fda0c069ba5f4145b37","0x6c021ae822bea943b2e66552bde1d2696a53fbb7","0x2a5062d22adcfaafbd5c541d4da82e4b450d4212","0x841fad6eae12c286d1fd18d1d525dffa75c7effe","0x5C4FDfc5233f935f20D2aDbA572F770c2E377Ab0","0xad996a45fd2373ed0b10efa4a8ecb9de445a4302", "0xd8321aa83fb0a4ecd6348d4577431310a6e0814d", "0x5cc61a78f164885776aa610fb0fe1257df78e59b", "0x10b620b2dbac4faa7d7ffd71da486f5d44cd86f9","0xe0654C8e6fd4D733349ac7E09f6f23DA256bF475","0x85dec8c4b2680793661bca91a8f129607571863d","0x74b23882a30290451A17c44f4F05243b6b58C76d","0xf16e81dce15b08f326220742020379b855b87df9", "0x9879abdea01a879644185341f7af7d8343556b7a","0x00a35FD824c717879BF370E70AC6868b95870Dfb","0xc5e2b037d30a390e62180970b3aa4e91868764cd", "0x10010078a54396F62c96dF8532dc2B4847d47ED3"]
 
   const token = await Token.deploy();
@@ -17,7 +18,7 @@ async function main() {
   const bribes = await Bribes.deploy();
   const factory = await Factory.deploy();
   const router = await Router.deploy(factory.address, wrappedNative);
-  const ve = await Ve.deploy(token.address);
+  const ve = await Ve.deploy(token.address,devWallet);
   const ve_dist = await Ve_dist.deploy(ve.address);
   const voter = await BaseV1Voter.deploy(ve.address, factory.address, gauges.address, bribes.address);
   const minter = await BaseV1Minter.deploy(voter.address, ve.address, ve_dist.address);

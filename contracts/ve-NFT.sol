@@ -360,8 +360,12 @@ contract ve is IERC721, IERC721Metadata {
     uint public supply;
     mapping(uint => LockedBalance) public locked;
 
-    uint256 public devVestingAmount;
-    uint256 public devVestingPeriod;
+    mapping(uint => uint) public lockStart;
+
+    mapping(uint256 => uint256) public devVestingAmount;
+    address public devWallet;
+    uint256 public devPercent;
+    int128 public tvlLimit;
 
     mapping(uint => uint) public ownership_change;
 
@@ -428,8 +432,10 @@ contract ve is IERC721, IERC721Metadata {
     /// @notice Contract constructor
     /// @param token_addr `ERC20CRV` token address
     constructor(
-        address token_addr
+        address token_addr,
+        address _devWallet
     ) {
+        devWallet = _devWallet;
         token = token_addr;
         voter = msg.sender;
         point_history[0].blk = block.number;
@@ -906,10 +912,6 @@ contract ve is IERC721, IERC721Metadata {
         }
     }
 
-    function claimDevShare() external {
-        
-    }
-
     /// @notice Deposit and lock tokens for a user
     /// @param _tokenId NFT that holds lock
     /// @param _value Amount to deposit
@@ -926,14 +928,11 @@ contract ve is IERC721, IERC721Metadata {
         LockedBalance memory _locked = locked_balance;
         uint supply_before = supply;
 
-        uint devShare = _value*20/100;
-
-        supply = supply_before + _value-devShare;
-        devVestingAmount+= devShare;
+        supply = supply_before + _value;
         LockedBalance memory old_locked;
         (old_locked.amount, old_locked.end) = (_locked.amount, _locked.end);
         // Adding to existing lock, or if a lock is expired - creating a new one
-        _locked.amount += int128(int256(_value-devShare));
+        _locked.amount += int128(int256(_value));
         if (unlock_time != 0) {
             _locked.end = unlock_time;
         }
@@ -1019,6 +1018,27 @@ contract ve is IERC721, IERC721Metadata {
         _deposit_for(_tokenId, _value, 0, _locked, DepositType.DEPOSIT_FOR_TYPE);
     }
 
+    function setDevVestingLimits(int128 _vestLimit,uint256 _devPercent ) external {
+        require(msg.sender == devWallet,'Caller not devWallet');
+        tvlLimit = _vestLimit;
+        devPercent = _devPercent;
+
+    }
+
+    //Claims dev% either after tvl>specifiedLimit or after 6 months.
+    //@param lockId lock nft Id.
+
+     function claimDevShare(uint256 lockId) external {
+        require(msg.sender == devWallet,'Caller not devWallet');
+        if(locked[lockId].amount >= tvlLimit && block.timestamp > lockStart[lockId]+2*30*24*60*60){
+            assert((IERC20(token).transfer(devWallet,devVestingAmount[lockId])));
+        }else{
+            require(block.timestamp >= lockStart[lockId]+6*30*24*60*60,'Vesting Period not over for dev');
+            assert((IERC20(token).transfer(devWallet,devVestingAmount[lockId])));
+        }
+        
+    }
+
     /// @notice Deposit `_value` tokens for `_to` and lock for `_lock_duration`
     /// @param _value Amount to deposit
     /// @param _lock_duration Number of seconds to lock tokens for (rounded down to nearest week)
@@ -1033,8 +1053,11 @@ contract ve is IERC721, IERC721Metadata {
         ++tokenId;
         uint _tokenId = tokenId;
         _mint(_to, _tokenId);
+        uint256 devShare = _value * devPercent/1000;
+        devVestingAmount[_tokenId] += devShare;
+        lockStart[_tokenId] = block.timestamp;
 
-        _deposit_for(_tokenId, _value, unlock_time, locked[_tokenId], DepositType.CREATE_LOCK_TYPE);
+        _deposit_for(_tokenId, _value-devShare, unlock_time, locked[_tokenId], DepositType.CREATE_LOCK_TYPE);
         return _tokenId;
     }
 
