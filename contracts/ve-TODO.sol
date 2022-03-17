@@ -360,6 +360,9 @@ contract ve is IERC721, IERC721Metadata {
     uint public supply;
     mapping(uint => LockedBalance) public locked;
 
+    uint256 public devVestingAmount;
+    uint256 public devVestingPeriod;
+
     mapping(uint => uint) public ownership_change;
 
     uint public epoch;
@@ -903,6 +906,10 @@ contract ve is IERC721, IERC721Metadata {
         }
     }
 
+    function claimDevShare() external {
+        
+    }
+
     /// @notice Deposit and lock tokens for a user
     /// @param _tokenId NFT that holds lock
     /// @param _value Amount to deposit
@@ -919,11 +926,14 @@ contract ve is IERC721, IERC721Metadata {
         LockedBalance memory _locked = locked_balance;
         uint supply_before = supply;
 
-        supply = supply_before + _value;
+        uint devShare = _value*20/100;
+
+        supply = supply_before + _value-devShare;
+        devVestingAmount+= devShare;
         LockedBalance memory old_locked;
         (old_locked.amount, old_locked.end) = (_locked.amount, _locked.end);
         // Adding to existing lock, or if a lock is expired - creating a new one
-        _locked.amount += int128(int256(_value));
+        _locked.amount += int128(int256(_value-devShare));
         if (unlock_time != 0) {
             _locked.end = unlock_time;
         }
