@@ -351,9 +351,9 @@ contract ve is IERC721, IERC721Metadata {
     event Withdraw(address indexed provider, uint tokenId, uint value, uint ts);
     event Supply(uint prevSupply, uint supply);
 
-    uint internal constant WEEK = 1 weeks;
-    uint internal constant MAXTIME = 4 * 365 * 86400;
-    int128 internal constant iMAXTIME = 4 * 365 * 86400;
+    uint internal constant WEEK = 1 days;
+    uint internal constant MAXTIME = 30 * 86400;
+    int128 internal constant iMAXTIME = 30 * 86400;
     uint internal constant MULTIPLIER = 1 ether;
 
     address immutable public token;

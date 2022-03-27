@@ -1,5 +1,5 @@
 /**
- *Submitted for verification at BscScan.com on 2021-01-06
+ *Submitted for verification at BscScan.com on 2021-01-07
 */
 
 // SPDX-License-Identifier: MIT
@@ -25,6 +25,80 @@ abstract contract Context {
     function _msgData() internal view virtual returns (bytes memory) {
         this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
         return msg.data;
+    }
+}
+
+// File: @openzeppelin/contracts/access/Ownable.sol
+
+pragma solidity ^0.6.0;
+
+/**
+ * @dev Contract module which provides a basic access control mechanism, where
+ * there is an account (an owner) that can be granted exclusive access to
+ * specific functions.
+ *
+ * By default, the owner account will be the one that deploys the contract. This
+ * can later be changed with {transferOwnership}.
+ *
+ * This module is used through inheritance. It will make available the modifier
+ * `onlyOwner`, which can be applied to your functions to restrict their use to
+ * the owner.
+ */
+contract Ownable is Context {
+    address private _owner;
+
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
+
+    /**
+     * @dev Initializes the contract setting the deployer as the initial owner.
+     */
+    constructor() internal {
+        address msgSender = _msgSender();
+        _owner = msgSender;
+        emit OwnershipTransferred(address(0), msgSender);
+    }
+
+    /**
+     * @dev Returns the address of the current owner.
+     */
+    function owner() public view returns (address) {
+        return _owner;
+    }
+
+    /**
+     * @dev Throws if called by any account other than the owner.
+     */
+    modifier onlyOwner() {
+        require(_owner == _msgSender(), "Ownable: caller is not the owner");
+        _;
+    }
+
+    /**
+     * @dev Leaves the contract without owner. It will not be possible to call
+     * `onlyOwner` functions anymore. Can only be called by the current owner.
+     *
+     * NOTE: Renouncing ownership will leave the contract without an owner,
+     * thereby removing any functionality that is only available to the owner.
+     */
+    function renounceOwnership() public virtual onlyOwner {
+        emit OwnershipTransferred(_owner, address(0));
+        _owner = address(0);
+    }
+
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     * Can only be called by the current owner.
+     */
+    function transferOwnership(address newOwner) public virtual onlyOwner {
+        require(
+            newOwner != address(0),
+            "Ownable: new owner is the zero address"
+        );
+        emit OwnershipTransferred(_owner, newOwner);
+        _owner = newOwner;
     }
 }
 
@@ -969,284 +1043,774 @@ library SafeERC20 {
     }
 }
 
-// File: @openzeppelin/contracts/access/Ownable.sol
+// File: @openzeppelin/contracts/utils/Pausable.sol
 
 pragma solidity ^0.6.0;
 
 /**
- * @dev Contract module which provides a basic access control mechanism, where
- * there is an account (an owner) that can be granted exclusive access to
- * specific functions.
+ * @dev Contract module which allows children to implement an emergency stop
+ * mechanism that can be triggered by an authorized account.
  *
- * By default, the owner account will be the one that deploys the contract. This
- * can later be changed with {transferOwnership}.
- *
- * This module is used through inheritance. It will make available the modifier
- * `onlyOwner`, which can be applied to your functions to restrict their use to
- * the owner.
+ * This module is used through inheritance. It will make available the
+ * modifiers `whenNotPaused` and `whenPaused`, which can be applied to
+ * the functions of your contract. Note that they will not be pausable by
+ * simply including this module, only once the modifiers are put in place.
  */
-contract Ownable is Context {
-    address private _owner;
-
-    event OwnershipTransferred(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
+contract Pausable is Context {
+    /**
+     * @dev Emitted when the pause is triggered by `account`.
+     */
+    event Paused(address account);
 
     /**
-     * @dev Initializes the contract setting the deployer as the initial owner.
+     * @dev Emitted when the pause is lifted by `account`.
+     */
+    event Unpaused(address account);
+
+    bool private _paused;
+
+    /**
+     * @dev Initializes the contract in unpaused state.
      */
     constructor() internal {
-        address msgSender = _msgSender();
-        _owner = msgSender;
-        emit OwnershipTransferred(address(0), msgSender);
+        _paused = false;
     }
 
     /**
-     * @dev Returns the address of the current owner.
+     * @dev Returns true if the contract is paused, and false otherwise.
      */
-    function owner() public view returns (address) {
-        return _owner;
+    function paused() public view returns (bool) {
+        return _paused;
     }
 
     /**
-     * @dev Throws if called by any account other than the owner.
+     * @dev Modifier to make a function callable only when the contract is not paused.
+     *
+     * Requirements:
+     *
+     * - The contract must not be paused.
      */
-    modifier onlyOwner() {
-        require(_owner == _msgSender(), "Ownable: caller is not the owner");
+    modifier whenNotPaused() {
+        require(!_paused, "Pausable: paused");
         _;
     }
 
     /**
-     * @dev Leaves the contract without owner. It will not be possible to call
-     * `onlyOwner` functions anymore. Can only be called by the current owner.
+     * @dev Modifier to make a function callable only when the contract is paused.
      *
-     * NOTE: Renouncing ownership will leave the contract without an owner,
-     * thereby removing any functionality that is only available to the owner.
+     * Requirements:
+     *
+     * - The contract must be paused.
      */
-    function renounceOwnership() public virtual onlyOwner {
-        emit OwnershipTransferred(_owner, address(0));
-        _owner = address(0);
+    modifier whenPaused() {
+        require(_paused, "Pausable: not paused");
+        _;
     }
 
     /**
-     * @dev Transfers ownership of the contract to a new account (`newOwner`).
-     * Can only be called by the current owner.
+     * @dev Triggers stopped state.
+     *
+     * Requirements:
+     *
+     * - The contract must not be paused.
      */
-    function transferOwnership(address newOwner) public virtual onlyOwner {
-        require(
-            newOwner != address(0),
-            "Ownable: new owner is the zero address"
-        );
-        emit OwnershipTransferred(_owner, newOwner);
-        _owner = newOwner;
+    function _pause() internal virtual whenNotPaused {
+        _paused = true;
+        emit Paused(_msgSender());
+    }
+
+    /**
+     * @dev Returns to normal state.
+     *
+     * Requirements:
+     *
+     * - The contract must be paused.
+     */
+    function _unpause() internal virtual whenPaused {
+        _paused = false;
+        emit Unpaused(_msgSender());
     }
 }
 
-// File: contracts/JETFUEL/interfaces/jetfuel/IStrategy.sol
+// File: contracts/JETFUEL/interfaces/common/IUniswapRouter.sol
 
 pragma solidity ^0.6.0;
 
-interface IStrategy {
-    function want() external view returns (address);
+interface IUniswapRouter {
+    function factory() external pure returns (address);
 
-    function deposit() external;
+    function WBNB() external pure returns (address);
 
-    function withdraw(uint256) external;
+    function addLiquidity(
+        address tokenA,
+        address tokenB,
+        uint256 amountADesired,
+        uint256 amountBDesired,
+        uint256 amountAMin,
+        uint256 amountBMin,
+        address to,
+        uint256 deadline
+    )
+        external
+        returns (
+            uint256 amountA,
+            uint256 amountB,
+            uint256 liquidity
+        );
 
-    function balanceOf() external view returns (uint256);
+    function addLiquidityBNB(
+        address token,
+        uint256 amountTokenDesired,
+        uint256 amountTokenMin,
+        uint256 amountBNBMin,
+        address to,
+        uint256 deadline
+    )
+        external
+        payable
+        returns (
+            uint256 amountToken,
+            uint256 amountBNB,
+            uint256 liquidity
+        );
 
-    function harvest() external;
+    function removeLiquidity(
+        address tokenA,
+        address tokenB,
+        uint256 liquidity,
+        uint256 amountAMin,
+        uint256 amountBMin,
+        address to,
+        uint256 deadline
+    ) external returns (uint256 amountA, uint256 amountB);
 
-    function retireStrat() external;
+    function removeLiquidityBNB(
+        address token,
+        uint256 liquidity,
+        uint256 amountTokenMin,
+        uint256 amountBNBMin,
+        address to,
+        uint256 deadline
+    ) external returns (uint256 amountToken, uint256 amountBNB);
+
+    function removeLiquidityWithPermit(
+        address tokenA,
+        address tokenB,
+        uint256 liquidity,
+        uint256 amountAMin,
+        uint256 amountBMin,
+        address to,
+        uint256 deadline,
+        bool approveMax,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (uint256 amountA, uint256 amountB);
+
+    function removeLiquidityBNBWithPermit(
+        address token,
+        uint256 liquidity,
+        uint256 amountTokenMin,
+        uint256 amountBNBMin,
+        address to,
+        uint256 deadline,
+        bool approveMax,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (uint256 amountToken, uint256 amountBNB);
+
+    function removeLiquidityBNBSupportingFeeOnTransferTokens(
+        address token,
+        uint256 liquidity,
+        uint256 amountTokenMin,
+        uint256 amountBNBMin,
+        address to,
+        uint256 deadline
+    ) external returns (uint256 amountBNB);
+
+    function removeLiquidityBNBWithPermitSupportingFeeOnTransferTokens(
+        address token,
+        uint256 liquidity,
+        uint256 amountTokenMin,
+        uint256 amountBNBMin,
+        address to,
+        uint256 deadline,
+        bool approveMax,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (uint256 amountBNB);
+
+    function swapExactTokensForTokens(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256[] memory amounts);
+
+    function swapTokensForExactTokens(
+        uint256 amountOut,
+        uint256 amountInMax,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256[] memory amounts);
+
+    function swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external;
+
+    function swapExactBNBForTokensSupportingFeeOnTransferTokens(
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external payable;
+
+    function swapExactTokensForBNBSupportingFeeOnTransferTokens(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external;
+
+    function swapExactBNBForTokens(
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external payable returns (uint256[] memory amounts);
+
+    function swapTokensForExactBNB(
+        uint256 amountOut,
+        uint256 amountInMax,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256[] memory amounts);
+
+    function swapExactTokensForBNB(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256[] memory amounts);
+
+    function swapBNBForExactTokens(
+        uint256 amountOut,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external payable returns (uint256[] memory amounts);
+
+    function quote(
+        uint256 amountA,
+        uint256 reserveA,
+        uint256 reserveB
+    ) external pure returns (uint256 amountB);
+
+    function getAmountOut(
+        uint256 amountIn,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) external pure returns (uint256 amountOut);
+
+    function getAmountIn(
+        uint256 amountOut,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) external pure returns (uint256 amountIn);
+
+    function getAmountsOut(uint256 amountIn, address[] calldata path)
+        external
+        view
+        returns (uint256[] memory amounts);
+
+    function getAmountsIn(uint256 amountOut, address[] calldata path)
+        external
+        view
+        returns (uint256[] memory amounts);
 }
 
-// File: contracts/JETFUEL/vaults/JetfuelVault.sol
+// File: contracts/JETFUEL/interfaces/common/IUniswapV2Pair.sol
+
+pragma solidity ^0.6.0;
+
+interface IUniswapV2Pair {
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    function name() external pure returns (string memory);
+
+    function symbol() external pure returns (string memory);
+
+    function decimals() external pure returns (uint8);
+
+    function totalSupply() external view returns (uint256);
+
+    function balanceOf(address owner) external view returns (uint256);
+
+    function allowance(address owner, address spender)
+        external
+        view
+        returns (uint256);
+
+    function approve(address spender, uint256 value) external returns (bool);
+
+    function transfer(address to, uint256 value) external returns (bool);
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) external returns (bool);
+
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
+
+    function PERMIT_TYPEHASH() external pure returns (bytes32);
+
+    function nonces(address owner) external view returns (uint256);
+
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
+
+    event Mint(address indexed sender, uint256 amount0, uint256 amount1);
+    event Burn(
+        address indexed sender,
+        uint256 amount0,
+        uint256 amount1,
+        address indexed to
+    );
+    event Swap(
+        address indexed sender,
+        uint256 amount0In,
+        uint256 amount1In,
+        uint256 amount0Out,
+        uint256 amount1Out,
+        address indexed to
+    );
+    event Sync(uint112 reserve0, uint112 reserve1);
+
+    function MINIMUM_LIQUIDITY() external pure returns (uint256);
+
+    function factory() external view returns (address);
+
+    function token0() external view returns (address);
+
+    function token1() external view returns (address);
+
+    function getReserves()
+        external
+        view
+        returns (
+            uint112 reserve0,
+            uint112 reserve1,
+            uint32 blockTimestampLast
+        );
+
+    function price0CumulativeLast() external view returns (uint256);
+
+    function price1CumulativeLast() external view returns (uint256);
+
+    function kLast() external view returns (uint256);
+
+    function mint(address to) external returns (uint256 liquidity);
+
+    function burn(address to)
+        external
+        returns (uint256 amount0, uint256 amount1);
+
+    function swap(
+        uint256 amount0Out,
+        uint256 amount1Out,
+        address to,
+        bytes calldata data
+    ) external;
+
+    function skim(address to) external;
+
+    function sync() external;
+
+    function initialize(address, address) external;
+}
+
+// File: contracts/JETFUEL/interfaces/jetfuel/IMasterFuel.sol
+
+pragma solidity ^0.6.0;
+
+interface IMasterFuel {
+    function deposit(uint256 _pid, uint256 _amount) external;
+
+    function withdraw(uint256 _pid, uint256 _amount) external;
+
+    function pendingFuel(uint256 _pid, address _user)
+        external
+        view
+        returns (uint256);
+
+    function userInfo(uint256 _pid, address _user)
+        external
+        view
+        returns (uint256, uint256);
+
+    function emergencyWithdraw(uint256 _pid) external;
+}
+
+// File: contracts/JETFUEL/strategies/Jetfuel/StrategyJetfuelLP.sol
 
 pragma solidity ^0.6.0;
 
 /**
- * @dev Implementation of a vault to deposit funds for yield optimizing.
- * This is the contract that receives funds and that users interface with.
- * The yield optimizing strategy itself is implemented in a separate 'Strategy.sol' contract.
+ * @dev Implementation of a strategy to get yields from farming LP Pools in the JetFuel platform.
+ *
+ * This strat is currently compatible with all LP pools.
  */
-contract LPVault is ERC20, Ownable {
+contract StrategyLP is Ownable, Pausable {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
 
-    struct StratCandidate {
-        address implementation;
-        uint256 proposedTime;
-    }
-
-    // The last proposed strategy to switch to.
-    StratCandidate public stratCandidate;
-    // The strategy currently in use by the vault.
-    address public strategy;
-    // The token the vault accepts and looks to maximize.
-    IERC20 public token;
-    // The minimum time it has to pass before a strat candidate can be approved.
-    uint256 public immutable approvalDelay;
-
-    event NewStratCandidate(address implementation);
-    event UpgradeStrat(address implementation);
+    /**
+     * @dev Tokens Used:
+     * {wbnb} - Required for liquidity routing when doing swaps.
+     * {fuel} - Token generated by staking our funds. In this case it's the {fuel} token.
+     * {lpPair} - Token that the strategy maximizes. The same token that users deposit in the vault.
+     * {lpToken0, lpToken1} - Tokens that the strategy maximizes. IUniswapV2Pair tokens
+     */
+    address public constant wbnb =
+        address(0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000);
+    address public  fuel;
+    address public lpPair;
+    address public lpToken0;
+    address public lpToken1;
 
     /**
-     * @dev Sets the value of {token} to the token that the vault will
-     * hold as underlying value. It initializes the vault's own 'moo' token.
-     * This token is minted when someone does a deposit. It is burned in order
-     * to withdraw the corresponding portion of the underlying assets.
-     * @param _token the token to maximize.
-     * @param _strategy the address of the strategy.
-     * @param _name the name of the vault token.
-     * @param _symbol the symbol of the vault token.
-     * @param _approvalDelay the delay before a new strat can be approved.
+     * @dev Third Party Contracts:
+     * {masterFuel} - MasterFuel contract. Stake Tokens, get rewards.
+     * {unirouter} - Strategy unirouter
+     * {poolId} - MasterFuel pool id
+     */
+    address public constant masterFuel =
+        address(0x9d1dbB49b2744A1555EDbF1708D64dC71B0CB052);
+    address public unirouter;
+    uint8 public poolId;
+
+    /**
+     * @dev jetfuel Contracts:
+     * {rewards} - Reward pool where the strategy fee earnings will go.
+     * {treasury} - Address of the Jetfuel Finance treasury
+     * {vault} - Address of the vault that controls the strategy's funds.
+     */
+
+     //TODO Replace rewards and treasury
+    address public constant rewards =
+        address(0xf6488205957f0b4497053d6422F49e27944eE3Dd);
+    address public constant treasury =
+        address(0x305b0eCf72634825f7231058444c65D885E1f327);
+    address public vault;
+
+    /**
+     * @dev Distribution of fees earned. This allocations relative to the % implemented on chargeFees().
+     * Current implementation separates 6% for fees.
+     *
+     * {REWARDS_FEE} - 4% goes to JETS holders through the JETS contract.
+     * {CALL_FEE} - 0.5% goes to whoever executes the harvest function as gas subsidy.
+     * {TREASURY_FEE} - 1.5% goes to the treasury.
+     * {MAX_FEE} - Aux const used to safely calc the correct amounts.
+     *
+     * {WITHDRAWAL_FEE} - Fee taxed when a user withdraws funds. 50 === 0.5% fee.
+     * {WITHDRAWAL_MAX} - Aux const used to safely calc the correct amounts.
+     */
+    uint256 public constant REWARDS_FEE = 667;
+    uint256 public constant CALL_FEE = 83;
+    uint256 public constant TREASURY_FEE = 250;
+    uint256 public constant MAX_FEE = 1000;
+
+    uint256 public constant WITHDRAWAL_FEE = 50;
+    uint256 public constant WITHDRAWAL_MAX = 10000;
+
+    /**
+     * @dev Routes we take to swap tokens using the configured unirouter.
+     * {fuelToWbnbRoute} - Route we take to get from {fuel} into {wbnb}.
+     * {wbnbToFuelRoute} - Route we take to get from {wbnb} into {fuel}.
+     * {fuelToLp0Route} - Route we take to get from {fuel} into {lpToken0}.
+     * {fuelToLp1Route} - Route we take to get from {fuel} into {lpToken1}.
+     */
+    address[] public fuelToWbnbRoute = [fuel, wbnb];
+    address[] public wbnbToFuelRoute = [wbnb, fuel];
+    address[] public fuelToLp0Route;
+    address[] public fuelToLp1Route;
+
+    /**
+     * @dev Event that is fired each time someone harvests the strat.
+     */
+    event StratHarvest(address indexed harvester);
+
+    /**
+     * @dev Initializes the strategy with the token to maximize.
      */
     constructor(
-        address _token,
-        address _strategy,
-        string memory _name,
-        string memory _symbol,
-        uint256 _approvalDelay
-    ) public ERC20(string(_name), string(_symbol)) {
-        token = IERC20(_token);
-        strategy = _strategy;
-        approvalDelay = _approvalDelay;
-    }
+        address _lpPair,
+        uint8 _poolId,
+        address _vault,
+        address _unirouter,
+        address _ymeta
+    ) public {
+        lpPair = _lpPair;
+        lpToken0 = IUniswapV2Pair(lpPair).token0();
+        lpToken1 = IUniswapV2Pair(lpPair).token1();
+        poolId = _poolId;
+        vault = _vault;
+        unirouter = _unirouter;
+        fuel = _ymeta;
 
-    /**
-     * @dev It calculates the total underlying value of {token} held by the system.
-     * It takes into account the vault contract balance, the strategy contract balance
-     *  and the balance deployed in other contracts as part of the strategy.
-     */
-    function balance() public view returns (uint256) {
-        return
-            token.balanceOf(address(this)).add(IStrategy(strategy).balanceOf());
-    }
-
-    /**
-     * @dev Custom logic in here for how much the vault allows to be borrowed.
-     * We return 100% of tokens for now. Under certain conditions we might
-     * want to keep some of the system funds at hand in the vault, instead
-     * of putting them to work.
-     */
-    function available() public view returns (uint256) {
-        return token.balanceOf(address(this));
-    }
-
-    /**
-     * @dev Function for various UIs to display the current value of one of our yield tokens.
-     * Returns an uint256 with 18 decimals of how much underlying asset one vault share represents.
-     */
-    function getPricePerFullShare() public view returns (uint256) {
-        return balance().mul(1e18).div(totalSupply());
-    }
-
-    /**
-     * @dev A helper function to call deposit() with all the sender's funds.
-     */
-    function depositAll() external {
-        deposit(token.balanceOf(msg.sender));
-    }
-
-    /**
-     * @dev The entrypoint of funds into the system. People deposit with this function
-     * into the vault. The vault is then in charge of sending funds into the strategy.
-     */
-    function deposit(uint256 _amount) public {
-        uint256 _pool = balance();
-        uint256 _before = token.balanceOf(address(this));
-        token.safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 _after = token.balanceOf(address(this));
-        _amount = _after.sub(_before); // Additional check for deflationary tokens
-        uint256 shares = 0;
-        if (totalSupply() == 0) {
-            shares = _amount;
-        } else {
-            shares = (_amount.mul(totalSupply())).div(_pool);
-        }
-        _mint(msg.sender, shares);
-
-        earn();
-    }
-
-    /**
-     * @dev Function to send funds into the strategy and put them to work. It's primarily called
-     * by the vault's deposit() function.
-     */
-    function earn() public {
-        uint256 _bal = available();
-        token.safeTransfer(strategy, _bal);
-        IStrategy(strategy).deposit();
-    }
-
-    /**
-     * @dev A helper function to call withdraw() with all the sender's funds.
-     */
-    function withdrawAll() external {
-        withdraw(balanceOf(msg.sender));
-    }
-
-    /**
-     * @dev Function to exit the system. The vault will withdraw the required tokens
-     * from the strategy and pay up the token holder. A proportional number of IOU
-     * tokens are burned in the process.
-     */
-    function withdraw(uint256 _shares) public {
-        uint256 r = (balance().mul(_shares)).div(totalSupply());
-        _burn(msg.sender, _shares);
-
-        uint256 b = token.balanceOf(address(this));
-        if (b < r) {
-            uint256 _withdraw = r.sub(b);
-            IStrategy(strategy).withdraw(_withdraw);
-            uint256 _after = token.balanceOf(address(this));
-            uint256 _diff = _after.sub(b);
-            if (_diff < _withdraw) {
-                r = b.add(_diff);
-            }
+        if (lpToken0 == wbnb) {
+            fuelToLp0Route = [fuel, wbnb];
+        } else if (lpToken0 != fuel) {
+            fuelToLp0Route = [fuel, wbnb, lpToken0];
         }
 
-        token.safeTransfer(msg.sender, r);
+        if (lpToken1 == wbnb) {
+            fuelToLp1Route = [fuel, wbnb];
+        } else if (lpToken1 != fuel) {
+            fuelToLp1Route = [fuel, wbnb, lpToken1];
+        }
+
+        IERC20(lpPair).safeApprove(masterFuel, uint256(-1));
+        IERC20(fuel).safeApprove(unirouter, uint256(-1));
+        IERC20(wbnb).safeApprove(unirouter, uint256(-1));
+
+        IERC20(lpToken0).safeApprove(unirouter, 0);
+        IERC20(lpToken0).safeApprove(unirouter, uint256(-1));
+
+        IERC20(lpToken1).safeApprove(unirouter, 0);
+        IERC20(lpToken1).safeApprove(unirouter, uint256(-1));
     }
 
     /**
-     * @dev Sets the candidate for the new strat to use with this vault.
-     * @param _implementation The address of the candidate strategy.
+     * @dev Function that puts the funds to work.
+     * It gets called whenever someone deposits in the strategy's vault contract.
+     * It deposits {lpPair} in the MasterFuel to farm {fuel}
      */
-    function proposeStrat(address _implementation) public onlyOwner {
-        stratCandidate = StratCandidate({
-            implementation: _implementation,
-            proposedTime: block.timestamp
-        });
+    function deposit() public whenNotPaused {
+        uint256 pairBal = IERC20(lpPair).balanceOf(address(this));
 
-        emit NewStratCandidate(_implementation);
+        if (pairBal > 0) {
+            IMasterFuel(masterFuel).deposit(poolId, pairBal);
+        }
     }
 
     /**
-     * @dev It switches the active strat for the strat candidate. After upgrading, the
-     * candidate implementation is set to the 0x00 address, and proposedTime to a time
-     * happening in +100 years for safety.
+     * @dev Withdraws funds and sents them back to the vault.
+     * It withdraws {lpPair} from the MasterFuel.
+     * The available {lpPair} minus fees is returned to the vault.
+     */
+    function withdraw(uint256 _amount) external {
+        require(msg.sender == vault, "!vault");
+
+        uint256 pairBal = IERC20(lpPair).balanceOf(address(this));
+
+        if (pairBal < _amount) {
+            IMasterFuel(masterFuel).withdraw(poolId, _amount.sub(pairBal));
+            pairBal = IERC20(lpPair).balanceOf(address(this));
+        }
+
+        if (pairBal > _amount) {
+            pairBal = _amount;
+        }
+
+        uint256 withdrawalFee = pairBal.mul(WITHDRAWAL_FEE).div(WITHDRAWAL_MAX);
+        IERC20(lpPair).safeTransfer(treasury, withdrawalFee);
+        IERC20(lpPair).safeTransfer(vault, pairBal.sub(withdrawalFee));
+    }
+
+    /**
+     * @dev Core function of the strat, in charge of collecting and re-investing rewards.
+     * 1. It claims rewards from the MasterFuel.
+     * 2. It charges the system fees to simplify the split.
+     * 3. It swaps the {fuel} token for {lpToken0} & {lpToken1}
+     * 4. Adds more liquidity to the pool.
+     * 5. It deposits the new LP tokens.
+     */
+    function harvest() external whenNotPaused {
+        require(!Address.isContract(msg.sender), "!contract");
+        IMasterFuel(masterFuel).deposit(poolId, 0);
+        chargeFees();
+        addLiquidity();
+        deposit();
+
+        emit StratHarvest(msg.sender);
+    }
+
+    /**
+     * @dev Takes out 6% as system fees from the rewards.
+     * 0.5% -> Call Fee
+     * 1.5% -> Treasury fee
+     * 4.0% -> JETS Holders
+     */
+    function chargeFees() internal {
+        uint256 toWbnb = IERC20(fuel).balanceOf(address(this)).mul(6).div(100);
+        IUniswapRouter(unirouter)
+            .swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            toWbnb,
+            0,
+            fuelToWbnbRoute,
+            address(this),
+            now.add(600)
+        );
+
+        uint256 wbnbBal = IERC20(wbnb).balanceOf(address(this));
+
+        uint256 callFee = wbnbBal.mul(CALL_FEE).div(MAX_FEE);
+        IERC20(wbnb).safeTransfer(msg.sender, callFee);
+
+        uint256 treasuryFee = wbnbBal.mul(TREASURY_FEE).div(MAX_FEE);
+        IERC20(wbnb).safeTransfer(treasury, treasuryFee);
+
+        uint256 rewardsFee = wbnbBal.mul(REWARDS_FEE).div(MAX_FEE);
+        IUniswapRouter(unirouter).swapExactTokensForTokens(
+            rewardsFee,
+            0,
+            wbnbToFuelRoute,
+            rewards,
+            now.add(600)
+        );
+    }
+
+    /**
+     * @dev Swaps {fuel} for {lpToken0}, {lpToken1} & {wbnb} using the configure unirouter.
+     */
+    function addLiquidity() internal {
+        uint256 fuelHalf = IERC20(fuel).balanceOf(address(this)).div(2);
+
+        if (lpToken0 != fuel) {
+            IUniswapRouter(unirouter)
+                .swapExactTokensForTokensSupportingFeeOnTransferTokens(
+                fuelHalf,
+                0,
+                fuelToLp0Route,
+                address(this),
+                now.add(600)
+            );
+        }
+
+        if (lpToken1 != fuel) {
+            IUniswapRouter(unirouter)
+                .swapExactTokensForTokensSupportingFeeOnTransferTokens(
+                fuelHalf,
+                0,
+                fuelToLp1Route,
+                address(this),
+                now.add(600)
+            );
+        }
+
+        uint256 lp0Bal = IERC20(lpToken0).balanceOf(address(this));
+        uint256 lp1Bal = IERC20(lpToken1).balanceOf(address(this));
+        IUniswapRouter(unirouter).addLiquidity(
+            lpToken0,
+            lpToken1,
+            lp0Bal,
+            lp1Bal,
+            1,
+            1,
+            address(this),
+            now.add(600)
+        );
+    }
+
+    /**
+     * @dev Function to calculate the total underlaying {lpPair} held by the strat.
+     * It takes into account both the funds in hand, as the funds allocated in the MasterFuel.
+     */
+    function balanceOf() public view returns (uint256) {
+        return balanceOfLpPair().add(balanceOfPool());
+    }
+
+    /**
+     * @dev It calculates how much {lpPair} the contract holds.
+     */
+    function balanceOfLpPair() public view returns (uint256) {
+        return IERC20(lpPair).balanceOf(address(this));
+    }
+
+    /**
+     * @dev It calculates how much {lpPair} the strategy has allocated in the MasterFuel
+     */
+    function balanceOfPool() public view returns (uint256) {
+        (uint256 _amount, ) =
+            IMasterFuel(masterFuel).userInfo(poolId, address(this));
+        return _amount;
+    }
+
+    /**
+     * @dev Function that has to be called as part of strat migration. It sends all the available funds back to the
+     * vault, ready to be migrated to the new strat.
      */
 
-    function upgradeStrat() public onlyOwner {
-        require(
-            stratCandidate.implementation != address(0),
-            "There is no candidate"
-        );
-        require(
-            stratCandidate.proposedTime.add(approvalDelay) < block.timestamp,
-            "Delay has not passed"
-        );
+    function retireStrat() external {
+        require(msg.sender == vault, "!vault");
 
-        emit UpgradeStrat(stratCandidate.implementation);
+        IMasterFuel(masterFuel).emergencyWithdraw(poolId);
 
-        //IStrategy(strategy).retireStrat();  // please check this.
-        strategy = stratCandidate.implementation;
-        stratCandidate.implementation = address(0);
-        stratCandidate.proposedTime = 5000000000;
+        uint256 pairBal = IERC20(lpPair).balanceOf(address(this));
+        IERC20(lpPair).transfer(vault, pairBal);
+    }
 
-        earn();
+    /**
+     * @dev Pauses deposits. Withdraws all funds from the MasterFuel, leaving rewards behind
+     */
+    function panic() public onlyOwner {
+        pause();
+        IMasterFuel(masterFuel).emergencyWithdraw(poolId);
+    }
+
+    /**
+     * @dev Pauses the strat.
+     */
+    function pause() public onlyOwner {
+        _pause();
+
+        IERC20(lpPair).safeApprove(masterFuel, 0);
+        IERC20(fuel).safeApprove(unirouter, 0);
+        IERC20(wbnb).safeApprove(unirouter, 0);
+        IERC20(lpToken0).safeApprove(unirouter, 0);
+        IERC20(lpToken1).safeApprove(unirouter, 0);
+    }
+
+    /**
+     * @dev Unpauses the strat.
+     */
+    function unpause() external onlyOwner {
+        _unpause();
+
+        IERC20(lpPair).safeApprove(masterFuel, uint256(-1));
+        IERC20(fuel).safeApprove(unirouter, uint256(-1));
+        IERC20(wbnb).safeApprove(unirouter, uint256(-1));
+
+        IERC20(lpToken0).safeApprove(unirouter, 0);
+        IERC20(lpToken0).safeApprove(unirouter, uint256(-1));
+
+        IERC20(lpToken1).safeApprove(unirouter, 0);
+        IERC20(lpToken1).safeApprove(unirouter, uint256(-1));
     }
 }
