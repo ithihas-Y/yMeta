@@ -83,6 +83,7 @@ contract BaseV1Voter {
     mapping(uint => uint) public usedWeights;  // nft => total voting weight of user
     mapping(address => bool) public isGauge;
     mapping(address => bool) public isWhitelisted;
+    mapping(address=>uint) public votingLockTimes;
 
     event GaugeCreated(address indexed gauge, address creator, address indexed bribe, address indexed pool);
     event Voted(address indexed voter, uint tokenId, int256 weight);
@@ -215,7 +216,11 @@ contract BaseV1Voter {
         require(ve(_ve).isApprovedOrOwner(msg.sender, tokenId));
         require(_poolVote.length == _weights.length);
         _vote(tokenId, _poolVote, _weights);
+        ve(_ve).transferFrom(msg.sender, address(this), tokenId);
+        votingLockTimes[msg.sender] = block.timestamp;
     }
+
+    //TODO week lock time
 
     function whitelist(address _token, uint _tokenId) public {
         if (_tokenId > 0) {
