@@ -87,7 +87,7 @@ contract BaseV1Minter {
 
     // emission calculation is 2% of available supply to mint adjusted by circulating / total supply
     function calculate_emission() public view returns (uint) {
-        return weekly * emission * circulating_supply() / target_base / _token.totalSupply();
+        return (weekly * emission * circulating_supply() / target_base / _token.totalSupply())*25/10;
     }
 
     // weekly emission takes the max of calculated (aka target) emission versus circulating tail end emission
